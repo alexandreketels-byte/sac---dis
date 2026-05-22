@@ -191,6 +191,74 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 .pend-badge{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;
   border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700}
 
+/* ── COL PICKER ── */
+.col-picker-wrap{position:relative}
+.col-picker-btn{padding:7px 14px;border:1px solid var(--border);border-radius:8px;
+  background:#fff;font-size:13px;cursor:pointer;color:var(--text2);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .2s}
+.col-picker-btn.active{border-color:var(--purple);color:var(--purple);background:var(--purple-l)}
+.col-count-badge{background:var(--purple);color:#fff;border-radius:10px;
+  padding:1px 7px;font-size:10px;font-weight:700}
+.col-picker-panel{position:absolute;right:0;top:38px;background:#fff;
+  border:1px solid var(--border);border-radius:14px;padding:16px;
+  z-index:300;width:280px;box-shadow:0 10px 32px rgba(0,0,0,.14)}
+.cp-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.cp-actions{display:flex;gap:6px}
+.cp-act{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:600}
+.cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;max-height:300px;overflow-y:auto}
+.cp-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:6px;
+  cursor:pointer;font-size:12px;color:var(--text);transition:background .15s}
+.cp-item:hover{background:#f3f4f6}
+.cp-item input{width:14px;height:14px;accent-color:var(--purple);cursor:pointer;flex-shrink:0}
+
+/* ── TEXTO LONGO (quebra de linha) ── */
+td.wrap-col{white-space:normal;overflow:visible;max-width:280px;
+  line-height:1.4;font-size:11px;word-break:break-word;vertical-align:top;
+  padding-top:9px}
+
+/* ── MOBILE RESPONSIVO ── */
+@media(max-width:768px){
+  header{padding:0 14px;height:52px}
+  .htitle{font-size:15px}
+  .hbadge{display:none}
+  .hb{padding:5px 10px;font-size:11px}
+  nav{padding:0 14px;overflow-x:auto}
+  .tab{padding:12px 14px;font-size:12px;white-space:nowrap}
+  main{padding:12px 14px}
+  .metrics{grid-template-columns:repeat(2,1fr);gap:8px}
+  .mc{padding:12px 14px}
+  .mv{font-size:22px}
+  .crow{grid-template-columns:1fr;gap:10px}
+  /* toolbar mobile: empilha */
+  .tb{gap:7px}
+  .tb input[type=text]{width:100%!important;flex:1 1 100%}
+  .tb .filter-toggle,.tb .sort-btn,.col-picker-btn{padding:8px 12px;font-size:12px}
+  /* painel de filtros mobile */
+  .filter-panel{padding:12px 14px}
+  .fp-row{gap:7px}
+  .fp-row select,.fp-row input{min-width:0;width:calc(50% - 4px)!important;font-size:12px}
+  .fp-lbl{min-width:50px;font-size:10px}
+  /* save bar mobile */
+  .savebar{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 14px}
+  .sbbtns{width:100%;justify-content:flex-end}
+  .btn-save-sel,.btn-save-all{padding:7px 14px;font-size:12px}
+  /* col picker mobile: full width */
+  .col-picker-panel{width:calc(100vw - 28px);right:-14px}
+  .cp-grid{grid-template-columns:1fr 1fr 1fr}
+  /* tabela mobile: scroll horizontal */
+  .tw{max-height:calc(100vh - 300px)}
+  th{font-size:10px;padding:8px 8px}
+  td{font-size:11px;padding:7px 8px}
+  td.wrap-col{max-width:200px}
+}
+@media(max-width:480px){
+  .sc{padding:32px 24px}
+  .metrics{grid-template-columns:1fr 1fr}
+  .cp-grid{grid-template-columns:1fr 1fr}
+  .savebar .btn-save-all{display:none}
+}
+
 .empty{text-align:center;padding:60px 20px;color:var(--text2)}
 .empty-icon{font-size:40px;margin-bottom:10px}
 .empty h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
@@ -252,6 +320,21 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
         <button class="filter-toggle" id="fpToggle" onclick="toggleFP()">
           ⚙ Filtros <span class="filter-badge" id="fBadge" style="display:none">0</span>
         </button>
+        <div class="col-picker-wrap">
+          <button class="col-picker-btn" id="cpBtn" onclick="toggleCP()">
+            ☰ Colunas <span class="col-count-badge" id="cpCount">0</span>
+          </button>
+          <div class="col-picker-panel" id="cpPanel" style="display:none">
+            <div class="cp-title">
+              Escolher Colunas
+              <div class="cp-actions">
+                <button class="cp-act" onclick="selectAllCols()">Todas</button>
+                <button class="cp-act" onclick="selectNoneCols()">Nenhuma</button>
+              </div>
+            </div>
+            <div class="cp-grid" id="cpGrid"></div>
+          </div>
+        </div>
         <button class="sort-btn asc" id="sortBtn" onclick="toggleSort()">
           <span id="sortIcon">↑</span> Data
         </button>
@@ -371,7 +454,80 @@ const EDIT_KEYS = ['SETOR','FABRICANTE','NIVEL_URGENCIA'];
 
 let url='', rows=[], headers=[], selected=new Set(), localEdits={};
 let sortDir='asc';
-let activeChip=''; // chip de período ativo
+let activeChip='';
+let visibleCols = JSON.parse(localStorage.getItem('gest_cols')||'null') || null; // null = todas
+let cpOpen = false;
+
+// Colunas que SEMPRE aparecem (não podem ser ocultadas)
+const FIXED_COLS = ['PEDIDO','_PEDIDO'];
+
+// ── COL PICKER ────────────────────────────────────────────────
+function toggleCP(){
+  cpOpen = !cpOpen;
+  document.getElementById('cpPanel').style.display = cpOpen ? 'block' : 'none';
+  document.getElementById('cpBtn').classList.toggle('active', cpOpen);
+}
+
+function buildColPicker(){
+  const editableKeys=['SETOR','FABRICANTE','NIVEL_URGENCIA'];
+  const pickable = headers.filter(h => !editableKeys.includes(h) && h!=='_PEDIDO');
+  if(!visibleCols) visibleCols = [...pickable]; // primeira vez: todas visíveis
+
+  // Garante que novos headers sejam visíveis por padrão
+  pickable.forEach(h=>{ if(!visibleCols.includes(h)) visibleCols.push(h); });
+
+  const grid = document.getElementById('cpGrid');
+  if(!grid) return;
+  grid.innerHTML = pickable.map(h=>{
+    const checked = visibleCols.includes(h);
+    const fixed   = FIXED_COLS.includes(h);
+    return `<label class="cp-item">
+      <input type="checkbox" ${checked?'checked':''} ${fixed?'disabled':''} 
+        onchange="toggleColVis('${h}',this.checked)">
+      <span style="${fixed?'color:var(--text3)':''}">${h}</span>
+    </label>`;
+  }).join('');
+
+  updateCpCount(pickable);
+}
+
+function toggleColVis(h, show){
+  if(show){ if(!visibleCols.includes(h)) visibleCols.push(h); }
+  else { visibleCols = visibleCols.filter(c=>c!==h); }
+  localStorage.setItem('gest_cols', JSON.stringify(visibleCols));
+  const editableKeys=['SETOR','FABRICANTE','NIVEL_URGENCIA'];
+  const pickable = headers.filter(h2=>!editableKeys.includes(h2) && h2!=='_PEDIDO');
+  updateCpCount(pickable);
+  renderTable();
+}
+
+function updateCpCount(pickable){
+  const count = visibleCols ? visibleCols.length : pickable.length;
+  document.getElementById('cpCount').textContent = count;
+}
+
+function selectAllCols(){
+  const editableKeys=['SETOR','FABRICANTE','NIVEL_URGENCIA'];
+  visibleCols = headers.filter(h=>!editableKeys.includes(h) && h!=='_PEDIDO');
+  localStorage.setItem('gest_cols', JSON.stringify(visibleCols));
+  buildColPicker(); renderTable();
+}
+
+function selectNoneCols(){
+  // Mantém apenas PEDIDO visível
+  visibleCols = headers.filter(h=>FIXED_COLS.includes(h) && h!=='_PEDIDO');
+  localStorage.setItem('gest_cols', JSON.stringify(visibleCols));
+  buildColPicker(); renderTable();
+}
+
+// Fecha col picker ao clicar fora
+document.addEventListener('click', e=>{
+  if(cpOpen && !e.target.closest('.col-picker-wrap')){
+    cpOpen=false;
+    const p=document.getElementById('cpPanel'); if(p) p.style.display='none';
+    const b=document.getElementById('cpBtn'); if(b) b.classList.remove('active');
+  }
+});
 
 // ── PAINEL DE FILTROS ─────────────────────────────────────────
 let fpOpen = false;
@@ -570,7 +726,9 @@ async function fetchData(){
       rows=j.data||[];
       localEdits={};
       selected.clear();
+      visibleCols = JSON.parse(localStorage.getItem('gest_cols')||'null');
       populateDynamicSelects();
+      buildColPicker();
       renderTable();
       renderDash();
     }else showErr(j.error||'Erro ao carregar.');
@@ -691,6 +849,14 @@ function getFiltered(){
 }
 
 // ── RENDER TABLE ─────────────────────────────────────────────
+// Colunas que devem ter quebra de linha (textos longos)
+const WRAP_COLS = ['ULTIMA OCORRENCIA','ultima ocorrencia','Ultima Ocorrencia',
+  'ULTIMA_OCORRENCIA','DESCRICAO','OBSERVACAO','OBSERVAÇÕES','OBS'];
+
+function isWrapCol(h){
+  return WRAP_COLS.some(w=> h.toUpperCase().includes('OCORREN') || h.toUpperCase().includes('DESCRI') || h.toUpperCase().includes('OBS'));
+}
+
 function renderTable(){
   updateSavebar();
   const filtered=getFiltered();
@@ -707,14 +873,20 @@ function renderTable(){
 
   const editableKeys=['SETOR','FABRICANTE','NIVEL_URGENCIA'];
   const dkey = getDateKey();
-  const displayHeaders=headers.filter(h=>!editableKeys.includes(h) && h!=='_PEDIDO');
+  // Filtra pelas colunas visíveis
+  const allDisplay = headers.filter(h=>!editableKeys.includes(h) && h!=='_PEDIDO');
+  const displayHeaders = visibleCols
+    ? allDisplay.filter(h=>visibleCols.includes(h))
+    : allDisplay;
 
   let html=`<table>
   <thead><tr>
     <th class="chk"><input type="checkbox" id="chkAll" onchange="toggleAll(this.checked)" title="Selecionar todos"></th>`;
   displayHeaders.forEach(h=>{
     const isDate = dkey && h===dkey;
-    html+=`<th${isDate?' style="min-width:130px"':''}>${h}${isDate ? (sortDir==='asc' ? ' ↑' : ' ↓') : ''}</th>`;
+    const isWrap = isWrapCol(h);
+    html+=`<th${isDate?' style="min-width:130px"':isWrap?' style="min-width:200px;max-width:300px"':''}>
+      ${h}${isDate ? (sortDir==='asc' ? ' ↑' : ' ↓') : ''}</th>`;
   });
   html+=`<th style="background:#f0f4ff;min-width:110px">SETOR</th>
     <th style="background:#f0f4ff;min-width:110px">FABRICANTE</th>
@@ -736,19 +908,23 @@ function renderTable(){
     html+=`<td class="chk"><input type="checkbox" ${isSel?'checked':''} onchange="toggleRow('${pid}',this.checked)"></td>`;
 
     displayHeaders.forEach(h=>{
-      const raw = r[h]??'';
-      const isDate = dkey && h===dkey;
+      const raw     = r[h]??'';
+      const isDate  = dkey && h===dkey;
+      const isWrap  = isWrapCol(h);
       const display = isDate ? fmtDate(raw) : (raw===''||raw===null?'—':raw);
-      const title   = isDate ? fmtDate(raw) : String(raw);
+      const titleStr= String(raw).replace(/"/g,'&quot;');
+
       if(isDate){
-        html+=`<td title="${title}" style="font-family:'DM Mono',monospace;font-size:11px;color:#374151;white-space:nowrap">${display}</td>`;
+        html+=`<td title="${titleStr}" style="font-family:'DM Mono',monospace;font-size:11px;color:#374151;white-space:nowrap">${display}</td>`;
+      } else if(isWrap){
+        // Quebra de linha para textos longos
+        html+=`<td class="wrap-col" title="${titleStr}">${display}</td>`;
       } else {
-        html+=`<td title="${title}">${display}</td>`;
+        html+=`<td title="${titleStr}">${display}</td>`;
       }
     });
 
     // SETOR select
-    const sc=SETOR_C[setor];
     html+=`<td class="edit-td">
       <select class="esel${setor?` filled-${setor}`:''}" id="SETOR_${pid}"
         onchange="setEdit('${pid}','SETOR',this.value)">
