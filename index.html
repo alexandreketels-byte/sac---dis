@@ -554,10 +554,25 @@ function toggleCP(){
 function buildColPicker(){
   const editableKeys=['SETOR','FABRICANTE','NIVEL_URGENCIA'];
   const pickable = headers.filter(h => !editableKeys.includes(h) && h!=='_PEDIDO');
-  if(!visibleCols) visibleCols = [...pickable]; // primeira vez: todas visíveis
 
-  // Garante que novos headers sejam visíveis por padrão
-  pickable.forEach(h=>{ if(!visibleCols.includes(h)) visibleCols.push(h); });
+  // Se não há seleção salva, mostra todas por padrão
+  if(!visibleCols){
+    visibleCols = [...pickable];
+    localStorage.setItem('gest_cols', JSON.stringify(visibleCols));
+  }
+
+  // Adiciona novos headers (que não existiam antes) à lista visível
+  // mas APENAS se o usuário nunca ocultou colunas (i.e. visibleCols = todas as colunas anteriores)
+  // Isso evita que novas colunas apareçam sem querer após salvar
+  const savedCols = JSON.parse(localStorage.getItem('gest_cols')||'null');
+  if(savedCols){
+    pickable.forEach(h=>{
+      if(!savedCols.includes(h) && !visibleCols.includes(h)){
+        // É um header novo que nunca existiu — adiciona visível por padrão
+        visibleCols.push(h);
+      }
+    });
+  }
 
   const grid = document.getElementById('cpGrid');
   if(!grid) return;
@@ -565,7 +580,7 @@ function buildColPicker(){
     const checked = visibleCols.includes(h);
     const fixed   = FIXED_COLS.includes(h);
     return `<label class="cp-item">
-      <input type="checkbox" ${checked?'checked':''} ${fixed?'disabled':''} 
+      <input type="checkbox" ${checked?'checked':''} ${fixed?'disabled':''}
         onchange="toggleColVis('${h}',this.checked)">
       <span style="${fixed?'color:var(--text3)':''}">${h}</span>
     </label>`;
@@ -711,45 +726,64 @@ function populateDynamicSelects(){
 }
 
 // ── PARSE DATA ────────────────────────────────────────────────
-// Detecta o campo de data dinamicamente (procura por "DATA" no nome da coluna)
 function getDateKey(){
   return headers.find(h=> /data/i.test(h) && !/banco|atualiz/i.test(h)) || null;
 }
 
-// Tenta parsear vários formatos de data do Google Sheets
-// Aceita: Date objects, "DD/MM/YYYY HH:MM", "YYYY-MM-DD HH:MM", timestamps, etc.
+// Parseia qualquer formato vindo do Google Sheets / Apps Script
+// Incluindo: "2025-12-11T03:00:00.000Z", "11/12/2025 10:48", serial numérico
 function parseDate(val){
   if(!val && val !== 0) return null;
-  // Já é objeto Date (quando vem do Apps Script serializado como string ISO)
-  if(val instanceof Date) return val;
+  if(val instanceof Date) return isNaN(val) ? null : val;
   const s = String(val).trim();
   if(!s || s==='—') return null;
 
-  // Formato ISO: 2025-12-11T10:48:00 ou 2025-12-11 10:48
+  // ── ISO com Z (UTC) ex: "2025-12-11T03:00:00.000Z" ──
+  // Converte para horário local de Brasília (UTC-3)
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)){
+    const utc = new Date(s);
+    if(!isNaN(utc)){
+      // Ajusta para UTC-3 (Brasília)
+      const br = new Date(utc.getTime() - (utc.getTimezoneOffset() * 60000));
+      // Se o offset local já é -3, usa direto; senão calcula
+      const localOffset = utc.getTimezoneOffset(); // em minutos
+      const brOffset = 180; // UTC-3 em minutos
+      if(localOffset === brOffset){
+        return utc; // já está no fuso certo
+      }
+      // força exibição como se fosse horário local BR
+      const adj = new Date(utc.getTime() + (localOffset - brOffset) * 60000);
+      return adj;
+    }
+  }
+
+  // ── ISO sem Z: "2025-12-11T10:48:00" ou "2025-12-11 10:48" ──
   if(/^\d{4}-\d{2}-\d{2}/.test(s)){
     const d = new Date(s.replace(' ','T'));
     if(!isNaN(d)) return d;
   }
-  // Formato BR: 11/12/2025 10:48 ou 11/12/2025
-  const brMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+
+  // ── Formato BR: "11/12/2025 10:48" ou "11/12/2025" ──
+  const brMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if(brMatch){
-    const [,d,m,y,h='0',min='0',sec='0'] = brMatch;
-    return new Date(+y, +m-1, +d, +h, +min, +sec);
+    const [,dd,mm,yyyy,hh='0',mi='0',ss='0'] = brMatch;
+    return new Date(+yyyy, +mm-1, +dd, +hh, +mi, +ss);
   }
-  // Número serial do Excel/Sheets (dias desde 30/12/1899)
+
+  // ── Serial numérico do Excel/Sheets ──
   if(/^\d+(\.\d+)?$/.test(s)){
     const n = parseFloat(s);
-    if(n > 1000){ // evita confundir com valores pequenos
-      const d = new Date(Date.UTC(1899,11,30) + n*86400000);
+    if(n > 1000){
+      const d = new Date(Date.UTC(1899,11,30) + n * 86400000);
       if(!isNaN(d)) return d;
     }
   }
-  // Fallback genérico
-  const d = new Date(s);
-  return isNaN(d) ? null : d;
+
+  const fallback = new Date(s);
+  return isNaN(fallback) ? null : fallback;
 }
 
-// Formata data para exibição: "11/12/2025 10:48"
+// Formata para exibição: "11/12/2025 10:48"
 function fmtDate(val){
   const d = parseDate(val);
   if(!d) return val || '—';
@@ -757,7 +791,7 @@ function fmtDate(val){
   return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// Retorna "YYYY-MM-DD" para comparação com input[type=date]
+// Retorna "YYYY-MM-DD" para comparar com input[type=date]
 function toDateStr(val){
   const d = parseDate(val);
   if(!d) return '';
@@ -809,7 +843,13 @@ async function fetchData(){
       rows=j.data||[];
       localEdits={};
       selected.clear();
-      visibleCols = JSON.parse(localStorage.getItem('gest_cols')||'null');
+      // ── Preserva visibleCols: só carrega do localStorage se ainda não foi definido
+      // Isso garante que salvar não altera as colunas visíveis que o usuário configurou
+      const savedCols = localStorage.getItem('gest_cols');
+      if(savedCols && !visibleCols){
+        visibleCols = JSON.parse(savedCols);
+      }
+      // Não sobrescreve visibleCols se já está definido (ex: após salvar)
       populateDynamicSelects();
       buildColPicker();
       renderTable();
@@ -1007,7 +1047,8 @@ function renderTable(){
       const titleStr= String(raw).replace(/"/g,'&quot;');
 
       if(isDate){
-        html+=`<td title="${titleStr}" style="font-family:'DM Mono',monospace;font-size:11px;color:#374151;white-space:nowrap">${display}</td>`;
+        // data: alinhamento middle, fonte mono, largura fixa, NÃO usa wrap-col
+        html+=`<td title="${titleStr}" style="font-family:'DM Mono',monospace;font-size:11px;color:#1e3a8a;white-space:nowrap;vertical-align:middle;min-width:120px;background:rgba(37,99,235,.03)">${display}</td>`;
       } else if(isWrap){
         // Quebra de linha para textos longos
         html+=`<td class="wrap-col" title="${titleStr}">${display}</td>`;
@@ -1164,4 +1205,3 @@ if(sv){
 </script>
 </body>
 </html>
-Oi
