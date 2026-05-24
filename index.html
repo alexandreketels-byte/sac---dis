@@ -687,24 +687,35 @@ function getFiltered(){
   });
 
   // ── ORDENAÇÃO ── usa timestamp numérico para datas, localeCompare para texto
-  if(sortColKey){
-    const isDateCol=dkey&&sortColKey===dkey;
-    result.sort((a,b)=>{
-      if(isDateCol){
-        // Pega o valor RAW (antes de formatar) para parsear corretamente
-        const da=parseDate(a[sortColKey]);
-        const db=parseDate(b[sortColKey]);
-        const ta=da?da.getTime():0;
-        const tb=db?db.getTime():0;
-        return sortColDir==='asc'?ta-tb:tb-ta;
-      }
-      const va=String(a[sortColKey]??'');
-      const vb=String(b[sortColKey]??'');
-      return sortColDir==='asc'
-        ?va.localeCompare(vb,'pt',{numeric:true,sensitivity:'base'})
-        :vb.localeCompare(va,'pt',{numeric:true,sensitivity:'base'});
-    });
-  }
+ // Ordenação por coluna
+if(sortColKey){
+  result.sort((a,b)=>{
+
+    let va = a[sortColKey];
+    let vb = b[sortColKey];
+
+    // tenta converter em data
+    const da = parseDate(va);
+    const db = parseDate(vb);
+
+    // se ambos forem datas válidas
+    if(da instanceof Date && !isNaN(da) &&
+       db instanceof Date && !isNaN(db)){
+
+      return sortColDir === 'asc'
+        ? da - db
+        : db - da;
+    }
+
+    // fallback texto
+    va = String(va ?? '').toLowerCase();
+    vb = String(vb ?? '').toLowerCase();
+
+    return sortColDir === 'asc'
+      ? va.localeCompare(vb,'pt',{numeric:true})
+      : vb.localeCompare(va,'pt',{numeric:true});
+  });
+}
   return result;
 }
 function applyAllFilters(){updateClearBtn();renderTable();}
