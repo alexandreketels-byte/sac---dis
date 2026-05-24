@@ -881,21 +881,60 @@ function updateSavebar(){
 
 // ── COL PICKER ────────────────────────────────────────────────
 function buildColPicker(){
-  const pickable=headers.filter(h=>!EDIT_KEYS.includes(h)&&h!=='_PEDIDO');
-  if(!visibleCols){visibleCols=[...pickable];localStorage.setItem(CK,JSON.stringify(visibleCols));}
-  else{
-    const known=new Set([...JSON.parse(localStorage.getItem(CK)||'[]'),...visibleCols]);
-    pickable.forEach(h=>{if(!known.has(h))visibleCols.push(h);});
+
+  const pickable = headers.filter(
+    h => !EDIT_KEYS.includes(h) && h !== '_PEDIDO'
+  );
+
+  // carrega do localStorage
+  const savedCols = JSON.parse(localStorage.getItem(CK) || 'null');
+
+  // primeira vez
+  if(!visibleCols){
+
+    if(savedCols && Array.isArray(savedCols)){
+      // mantém SOMENTE colunas que ainda existem
+      visibleCols = savedCols.filter(c => pickable.includes(c));
+    }else{
+      // primeira execução da vida
+      visibleCols = [...pickable];
+    }
+
   }
-  const grid=document.getElementById('cpGrid');
-  if(!grid)return;
-  grid.innerHTML=pickable.map(h=>{
-    const chk=visibleCols.includes(h);
-    const fixed=FIXED_COLS.includes(h);
-    return`<label class="cp-item"><input type="checkbox" ${chk?'checked':''} ${fixed?'disabled':''}
-      onchange="toggleColVis('${h}',this.checked)"><span>${h}</span></label>`;
+
+  // garante que PEDIDO nunca suma
+  FIXED_COLS.forEach(c=>{
+    if(headers.includes(c) && !visibleCols.includes(c)){
+      visibleCols.unshift(c);
+    }
+  });
+
+  // salva novamente
+  localStorage.setItem(CK, JSON.stringify(visibleCols));
+
+  // render UI
+  const grid = document.getElementById('cpGrid');
+
+  if(!grid) return;
+
+  grid.innerHTML = pickable.map(h => {
+
+    const chk = visibleCols.includes(h);
+    const fixed = FIXED_COLS.includes(h);
+
+    return `
+      <label class="cp-item">
+        <input type="checkbox"
+          ${chk ? 'checked' : ''}
+          ${fixed ? 'disabled' : ''}
+          onchange="toggleColVis('${h}',this.checked)">
+        <span>${h}</span>
+      </label>
+    `;
+
   }).join('');
-  document.getElementById('cpCount').textContent=visibleCols.length;
+
+  document.getElementById('cpCount').textContent = visibleCols.length;
 }
 function toggleColVis(h,show){
   if(show){if(!visibleCols.includes(h))visibleCols.push(h);}
