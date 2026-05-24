@@ -621,17 +621,35 @@ function getFiltered(){
     return true;
   });
   // Ordenação por coluna
-  if(sortColKey){
-    const dkey=getDateKey();
-    result.sort((a,b)=>{
-      let va=String(a[sortColKey]??''),vb=String(b[sortColKey]??'');
-      if(dkey&&sortColKey===dkey){
-        const da=parseDate(a[sortColKey]),db=parseDate(b[sortColKey]);
-        if(da&&db)return sortColDir==='asc'?da-db:db-da;
-      }
-      return sortColDir==='asc'?va.localeCompare(vb,'pt',{numeric:true}):vb.localeCompare(va,'pt',{numeric:true});
-    });
-  }
+  // Ordenação por coluna
+if(sortColKey){
+  result.sort((a,b)=>{
+
+    let va = a[sortColKey];
+    let vb = b[sortColKey];
+
+    // tenta converter em data
+    const da = parseDate(va);
+    const db = parseDate(vb);
+
+    // se ambos forem datas válidas
+    if(da instanceof Date && !isNaN(da) &&
+       db instanceof Date && !isNaN(db)){
+
+      return sortColDir === 'asc'
+        ? da - db
+        : db - da;
+    }
+
+    // fallback texto
+    va = String(va ?? '').toLowerCase();
+    vb = String(vb ?? '').toLowerCase();
+
+    return sortColDir === 'asc'
+      ? va.localeCompare(vb,'pt',{numeric:true})
+      : vb.localeCompare(va,'pt',{numeric:true});
+  });
+}
   return result;
 }
 function applyAllFilters(){updateClearBtn();renderTable();}
