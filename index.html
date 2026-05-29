@@ -412,7 +412,95 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 </div>
 
 <!-- APP -->
+<!-- APP -->
 <div id="app">
+
+  <!-- MODAL CSV → COLE AQUI -->
+  <div id="modalCSV" style="display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
+    align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+      padding:32px 36px;max-width:520px;width:94%;box-shadow:0 24px 60px rgba(0,0,0,.6)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px">📂 Importar CSV</h2>
+          <p style="color:var(--text3);font-size:12px">Substitui os dados da Aba 1 e atualiza o portal automaticamente</p>
+        </div>
+        <button onclick="fecharModalCSV()" style="background:none;border:none;color:var(--text3);
+          font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px">✕</button>
+      </div>
+      <div style="background:var(--blue-l);border:1px solid rgba(59,130,246,.3);border-radius:10px;
+        padding:12px 16px;margin-bottom:18px;font-size:12px;color:#93c5fd;line-height:1.6">
+        💡 <strong>Dica:</strong> Exporte do seu sistema como <strong>CSV</strong>.
+        O portal detecta o separador automaticamente
+        (<code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px">, ; | Tab</code>).
+        A primeira linha deve ser o cabeçalho.
+      </div>
+      <div id="csvDropZone"
+        onclick="document.getElementById('csvFileInput').click()"
+        ondragover="csvDragOver(event)" ondragleave="csvDragLeave(event)" ondrop="csvDrop(event)"
+        style="border:2px dashed var(--border2);border-radius:12px;padding:36px 20px;
+          text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;background:var(--surface2)">
+        <div style="font-size:36px;margin-bottom:10px">📄</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px">
+          Clique para selecionar ou arraste o arquivo aqui
+        </div>
+        <div style="font-size:12px;color:var(--text3)">Formato: .csv</div>
+        <input type="file" id="csvFileInput" accept=".csv,.txt" style="display:none"
+          onchange="csvArquivoSelecionado(this.files[0])">
+      </div>
+      <div id="csvPreview" style="display:none;margin-bottom:16px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+          padding:12px 14px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span id="csvFileName" style="font-size:13px;font-weight:600;color:var(--text)"></span>
+            <button onclick="limparCSV()" style="background:none;border:none;color:var(--text3);
+              font-size:12px;cursor:pointer">✕ Remover</button>
+          </div>
+          <div id="csvStats" style="font-size:12px;color:var(--text3)"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">PRÉVIA (primeiras 3 linhas):</div>
+        <div id="csvPreviewTable" style="overflow:auto;border-radius:8px;border:1px solid var(--border);max-height:140px"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;
+          border:1px solid var(--blue);border-radius:8px;cursor:pointer;background:var(--blue-l)">
+          <input type="radio" name="csvOpt" value="substituir" checked onchange="csvOptChange()" style="accent-color:var(--blue)">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text)">🔄 Substituir</div>
+            <div style="font-size:11px;color:var(--text3)">Limpa Aba 1 e insere o CSV</div>
+          </div>
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;
+          border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface2)">
+          <input type="radio" name="csvOpt" value="acrescentar" onchange="csvOptChange()" style="accent-color:var(--blue)">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text)">➕ Acrescentar</div>
+            <div style="font-size:11px;color:var(--text3)">Adiciona ao final da Aba 1</div>
+          </div>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="fecharModalCSV()" style="padding:10px 20px;border:1px solid var(--border);
+          border-radius:8px;background:var(--surface2);color:var(--text2);
+          font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
+        <button id="btnImportarCSV" onclick="importarCSV()" disabled
+          style="padding:10px 24px;border:none;border-radius:8px;background:var(--green);
+          color:#fff;font-size:13px;font-weight:700;cursor:not-allowed;opacity:.4">
+          📤 Importar
+        </button>
+      </div>
+      <div id="csvProgress" style="display:none;margin-top:16px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px" id="csvProgressMsg">Enviando...</div>
+        <div style="background:var(--surface3);border-radius:6px;height:6px;overflow:hidden">
+          <div id="csvProgressBar" style="height:6px;background:var(--green);border-radius:6px;width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- FIM MODAL CSV -->
+
+  <header>
   <header>
     <div class="hl">
       <span style="font-size:18px">⚡</span>
@@ -420,10 +508,17 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
       <span class="hbadge">DIS</span>
     </div>
     <div class="hr">
-      <span id="toast" class="toast" style="display:none"></span>
-      <button class="hb" onclick="fetchData()"><span id="ri">↻</span> Atualizar</button>
-      <button class="hb red" onclick="desconectar()">Desconectar</button>
-    </div>
+  <span id="toast" class="toast" style="display:none"></span>
+
+  <!-- ✅ COLAR AQUI -->
+  <button class="hb" onclick="abrirModalCSV()"
+    style="border-color:rgba(34,197,94,.3);color:#86efac;background:rgba(34,197,94,.08)">
+    📂 Importar CSV
+  </button>
+
+  <button class="hb" onclick="fetchData()"><span id="ri">↻</span> Atualizar</button>
+  <button class="hb red" onclick="desconectar()">Desconectar</button>
+</div>
   </header>
 
   <nav>
@@ -1366,6 +1461,134 @@ if(sv){
   document.getElementById('setup').style.display='none';
   document.getElementById('app').style.display='flex';
   fetchData();
+}
+  // ── IMPORTAR CSV ──────────────────────────────────────────────
+let csvDados = null;
+
+function abrirModalCSV(){
+  document.getElementById('modalCSV').style.display='flex';
+}
+function fecharModalCSV(){
+  document.getElementById('modalCSV').style.display='none';
+  limparCSV();
+}
+document.getElementById('modalCSV')?.addEventListener('click',function(e){
+  if(e.target===this) fecharModalCSV();
+});
+function csvDragOver(e){
+  e.preventDefault();
+  document.getElementById('csvDropZone').style.borderColor='var(--blue)';
+  document.getElementById('csvDropZone').style.background='var(--blue-l)';
+}
+function csvDragLeave(e){
+  document.getElementById('csvDropZone').style.borderColor='var(--border2)';
+  document.getElementById('csvDropZone').style.background='var(--surface2)';
+}
+function csvDrop(e){
+  e.preventDefault();
+  csvDragLeave(e);
+  const file=e.dataTransfer.files[0];
+  if(file) csvArquivoSelecionado(file);
+}
+function csvArquivoSelecionado(file){
+  if(!file) return;
+  if(!file.name.match(/\.(csv|txt)$/i)){ showErr('Selecione um arquivo .csv'); return; }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{ csvDados=parseCSV(e.target.result); mostrarPreviewCSV(file.name,csvDados); }
+    catch(err){ showErr('Erro ao ler CSV: '+err.message); }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(lines.length<2) throw new Error('CSV precisa ter cabeçalho + dados.');
+  const first=lines[0];
+  const seps=[',',';','|','\t'];
+  const sep=seps.reduce((best,s)=>{
+    const cnt=(first.match(new RegExp('\\'+s,'g'))||[]).length;
+    return cnt>(first.match(new RegExp('\\'+best,'g'))||[]).length?s:best;
+  },',');
+  const parseLine=line=>{
+    const cols=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+      else if(c===sep&&!inQ){cols.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    cols.push(cur.trim()); return cols;
+  };
+  return{ headers:parseLine(lines[0]), rows:lines.slice(1).map(l=>parseLine(l)), sep };
+}
+function mostrarPreviewCSV(nome,dados){
+  document.getElementById('csvFileName').textContent=nome;
+  document.getElementById('csvStats').textContent=
+    `${dados.rows.length} linhas · ${dados.headers.length} colunas · separador: "${dados.sep==='\t'?'Tab':dados.sep}"`;
+  const preview=dados.rows.slice(0,3);
+  document.getElementById('csvPreviewTable').innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:var(--surface3)">
+        ${dados.headers.map(h=>`<th style="padding:5px 8px;text-align:left;color:var(--text2);
+          font-size:10px;white-space:nowrap;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>${preview.map(r=>`<tr>${r.map(c=>`<td style="padding:5px 8px;color:var(--text2);
+        border-bottom:1px solid var(--border);max-width:120px;overflow:hidden;
+        text-overflow:ellipsis;white-space:nowrap">${c||'—'}</td>`).join('')}</tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('csvPreview').style.display='block';
+  document.getElementById('csvDropZone').style.display='none';
+  const btn=document.getElementById('btnImportarCSV');
+  btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+}
+function limparCSV(){
+  csvDados=null;
+  document.getElementById('csvPreview').style.display='none';
+  document.getElementById('csvDropZone').style.display='block';
+  document.getElementById('csvFileInput').value='';
+  document.getElementById('csvProgress').style.display='none';
+  const btn=document.getElementById('btnImportarCSV');
+  btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+}
+function csvOptChange(){
+  document.querySelectorAll('input[name="csvOpt"]').forEach(o=>{
+    const lbl=o.closest('label');
+    if(o.checked){lbl.style.borderColor='var(--blue)';lbl.style.background='var(--blue-l)';}
+    else{lbl.style.borderColor='var(--border)';lbl.style.background='var(--surface2)';}
+  });
+}
+async function importarCSV(){
+  if(!csvDados) return;
+  const modo=document.querySelector('input[name="csvOpt"]:checked').value;
+  const prog=document.getElementById('csvProgress');
+  const progBar=document.getElementById('csvProgressBar');
+  const progMsg=document.getElementById('csvProgressMsg');
+  prog.style.display='block';
+  document.getElementById('btnImportarCSV').disabled=true;
+  try{
+    const CHUNK=200, total=csvDados.rows.length, chunks=[];
+    for(let i=0;i<total;i+=CHUNK) chunks.push(csvDados.rows.slice(i,i+CHUNK));
+    for(let ci=0;ci<chunks.length;ci++){
+      const pct=Math.round(((ci+1)/chunks.length)*100);
+      progMsg.textContent=`Enviando bloco ${ci+1}/${chunks.length} (${pct}%)...`;
+      progBar.style.width=pct+'%';
+      const r=await fetch(url,{method:'POST',body:JSON.stringify({
+        action:'importarCSV', headers:csvDados.headers, rows:chunks[ci],
+        modo:ci===0?modo:'acrescentar', isFirst:ci===0, isLast:ci===chunks.length-1
+      })});
+      const j=await r.json();
+      if(!j.success) throw new Error(j.error||'Erro no servidor');
+    }
+    progMsg.textContent='✅ Importado com sucesso!';
+    progBar.style.background='var(--green)';
+    toast(`✅ ${total} linhas importadas para a Aba 1!`);
+    setTimeout(()=>{ fecharModalCSV(); fetchData(); },1200);
+  }catch(e){
+    showErr('Erro na importação: '+e.message);
+    prog.style.display='none';
+    document.getElementById('btnImportarCSV').disabled=false;
+  }
 }
 </script>
 </body>
