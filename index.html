@@ -539,15 +539,22 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
     <!-- BANCO DE DADOS -->
     <div id="tBanco" style="display:none">
 
-  <!-- FILTRO PERÍODO -->
-  <div class="tb" style="margin-bottom:12px">
-    <select id="periodoBanco" onchange="renderBanco()">
-      <option value="todos">📊 Todo histórico</option>
-      <option value="mes">📅 Este mês</option>
-      <option value="30">🗓️ Últimos 30 dias</option>
-      <option value="7">📆 Últimos 7 dias</option>
-    </select>
-  </div>
+  <!-- FILTRO POR DATA -->
+<div class="tb" style="margin-bottom:12px;gap:10px">
+  <input
+    type="date"
+    id="dataInicialBanco"
+    onchange="renderBanco()">
+
+  <input
+    type="date"
+    id="dataFinalBanco"
+    onchange="renderBanco()">
+
+  <button class="hb" onclick="limparPeriodoBanco()">
+    Limpar
+  </button>
+</div>
 
   <!-- Indicadores topo -->
   <div class="metrics" id="bMetrics"></div>
@@ -1148,37 +1155,36 @@ function renderBanco(){
 
   let data = [...bancoDados];
 
-  const periodo =
-    document.getElementById('periodoBanco')?.value || 'todos';
+  const dataInicial =
+    document.getElementById('dataInicialBanco')?.value;
 
-  const hoje = new Date();
+  const dataFinal =
+    document.getElementById('dataFinalBanco')?.value;
 
-  if(periodo === 'mes'){
-    data = data.filter(r=>{
+  if(dataInicial || dataFinal){
+
+    data = data.filter(r => {
+
       const d = parseDate(r.SALVO_EM);
-      return d &&
-        d.getMonth() === hoje.getMonth() &&
-        d.getFullYear() === hoje.getFullYear();
+
+      if(!d) return false;
+
+      const dataRegistro =
+        d.getFullYear() + '-' +
+        String(d.getMonth()+1).padStart(2,'0') + '-' +
+        String(d.getDate()).padStart(2,'0');
+
+      if(dataInicial && dataRegistro < dataInicial)
+        return false;
+
+      if(dataFinal && dataRegistro > dataFinal)
+        return false;
+
+      return true;
     });
   }
 
-  if(periodo === '30'){
-    data = data.filter(r=>{
-      const d = parseDate(r.SALVO_EM);
-      return d &&
-        ((hoje - d) / 86400000) <= 30;
-    });
-  }
-
-  if(periodo === '7'){
-    data = data.filter(r=>{
-      const d = parseDate(r.SALVO_EM);
-      return d &&
-        ((hoje - d) / 86400000) <= 7;
-    });
-  }
-
-  const total = data.length;
+    const total = data.length;
   if(!total){
     document.getElementById('bMetrics').innerHTML=`<div style="color:var(--text3);font-size:13px;padding:20px">Banco de dados vazio. Salve registros primeiro.</div>`;
     return;
@@ -1630,6 +1636,11 @@ async function importarCSV(){
     prog.style.display='none';
     document.getElementById('btnImportarCSV').disabled=false;
   }
+}
+  function limparPeriodoBanco(){
+  document.getElementById('dataInicialBanco').value = '';
+  document.getElementById('dataFinalBanco').value = '';
+  renderBanco();
 }
 </script>
 </body>
