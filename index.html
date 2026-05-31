@@ -538,9 +538,19 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 
     <!-- BANCO DE DADOS -->
     <div id="tBanco" style="display:none">
-      <!-- Indicadores topo -->
-      <div class="metrics" id="bMetrics"></div>
 
+  <!-- FILTRO PERÍODO -->
+  <div class="tb" style="margin-bottom:12px">
+    <select id="periodoBanco" onchange="renderBanco()">
+      <option value="todos">📊 Todo histórico</option>
+      <option value="mes">📅 Este mês</option>
+      <option value="30">🗓️ Últimos 30 dias</option>
+      <option value="7">📆 Últimos 7 dias</option>
+    </select>
+  </div>
+
+  <!-- Indicadores topo -->
+  <div class="metrics" id="bMetrics"></div>
       <!-- Linha de gráficos principais -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px" id="bCharts"></div>
 
@@ -1135,7 +1145,39 @@ async function fetchBanco(){
 
 // ── RENDER BANCO ──────────────────────────────────────────────
 function renderBanco(){
-  const data = bancoDados;
+
+  let data = [...bancoDados];
+
+  const periodo =
+    document.getElementById('periodoBanco')?.value || 'todos';
+
+  const hoje = new Date();
+
+  if(periodo === 'mes'){
+    data = data.filter(r=>{
+      const d = parseDate(r.Salvo_em);
+      return d &&
+        d.getMonth() === hoje.getMonth() &&
+        d.getFullYear() === hoje.getFullYear();
+    });
+  }
+
+  if(periodo === '30'){
+    data = data.filter(r=>{
+      const d = parseDate(r.Salvo_em);
+      return d &&
+        ((hoje - d) / 86400000) <= 30;
+    });
+  }
+
+  if(periodo === '7'){
+    data = data.filter(r=>{
+      const d = parseDate(r.Salvo_em);
+      return d &&
+        ((hoje - d) / 86400000) <= 7;
+    });
+  }
+
   const total = data.length;
   if(!total){
     document.getElementById('bMetrics').innerHTML=`<div style="color:var(--text3);font-size:13px;padding:20px">Banco de dados vazio. Salve registros primeiro.</div>`;
