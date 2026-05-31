@@ -1155,7 +1155,7 @@ function renderBanco(){
 
   if(periodo === 'mes'){
     data = data.filter(r=>{
-      const d = parseDate(r.Salvo_em);
+      const d = parseDate(r.SALVO_EM);
       return d &&
         d.getMonth() === hoje.getMonth() &&
         d.getFullYear() === hoje.getFullYear();
@@ -1164,7 +1164,7 @@ function renderBanco(){
 
   if(periodo === '30'){
     data = data.filter(r=>{
-      const d = parseDate(r.Salvo_em);
+      const d = parseDate(r.SALVO_EM);
       return d &&
         ((hoje - d) / 86400000) <= 30;
     });
@@ -1172,7 +1172,7 @@ function renderBanco(){
 
   if(periodo === '7'){
     data = data.filter(r=>{
-      const d = parseDate(r.Salvo_em);
+      const d = parseDate(r.SALVO_EM);
       return d &&
         ((hoje - d) / 86400000) <= 7;
     });
