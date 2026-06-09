@@ -382,18 +382,155 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 
 /* ── MOBILE ── */
 @media(max-width:768px){
-  header{padding:0 14px;height:50px}
-  .htitle{font-size:14px}
-  .hbadge{display:none}
-  nav{padding:0 14px;overflow-x:auto}
-  main{padding:12px 14px}
-  .metrics{grid-template-columns:1fr 1fr;gap:8px}
-  .crow{grid-template-columns:1fr;gap:8px}
-  .tb input[type=text]{width:100%;flex:1 1 100%}
-  .tw{max-height:calc(100vh - 250px)}
-  .savebar{flex-direction:column;gap:8px}
-  .sbbtns{width:100%;justify-content:flex-end}
-  .col-picker-panel{width:calc(100vw - 28px);right:-14px}
+
+  /* HEADER */
+  header{
+    padding:8px;
+    height:auto;
+    min-height:56px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .hl{
+    flex:1;
+    min-width:0;
+  }
+
+  .htitle{
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:block;
+    max-width:100%;
+  }
+
+  .hbadge{
+    display:none;
+  }
+
+  .hr{
+    width:100%;
+    display:flex;
+    gap:6px;
+  }
+
+  .hr .hb{
+    flex:1;
+    padding:8px 4px;
+    font-size:11px;
+  }
+
+  /* TABS */
+  nav{
+    padding:0;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+
+  .tab{
+    flex-shrink:0;
+    padding:12px 14px;
+  }
+
+  /* MAIN */
+  main{
+    padding:10px;
+  }
+
+  /* BUSCA */
+  .tb{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+  }
+
+  .tb input[type=text]{
+    width:100%;
+  }
+
+  /* LINHA DOS BOTÕES */
+  .tb .tbtn{
+    width:100%;
+    justify-content:center;
+  }
+
+  /* EXPORTAR */
+  .tb .tbtn:last-of-type{
+    margin-left:0 !important;
+  }
+
+  /* CONTADOR */
+  .tbn{
+    text-align:center;
+    width:100%;
+  }
+
+  /* PAINEL COLUNAS */
+  .col-picker-panel{
+    position:fixed;
+    left:10px;
+    right:10px;
+    top:120px;
+    width:auto;
+    max-height:70vh;
+    overflow:auto;
+    z-index:9999;
+  }
+
+  .cp-grid{
+    grid-template-columns:1fr;
+  }
+
+  /* SAVE BAR */
+  .savebar{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .sbbtns{
+    width:100%;
+    display:flex;
+  }
+
+  .sbbtns button{
+    flex:1;
+  }
+
+  /* TABELA */
+  .tw{
+    max-height:none;
+    overflow:auto;
+  }
+
+  table{
+    min-width:900px;
+  }
+
+  td{
+    font-size:11px;
+  }
+
+  th{
+    font-size:10px;
+  }
+
+  .esel{
+    min-width:110px;
+    font-size:11px;
+  }
+
+  /* DASHBOARD */
+  .metrics{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .crow{
+    grid-template-columns:1fr;
+  }
+
 }
 </style>
 </head>
