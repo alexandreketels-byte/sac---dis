@@ -755,7 +755,6 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
         <span class="sbinfo"><strong id="selCount">0</strong> linha(s) selecionada(s)</span>
         <div class="sbbtns">
           <button class="btn-sv ghost" onclick="clearSel()">✕ Limpar</button>
-          <button class="btn-sv sec" onclick="saveAll()">💾 Salvar Todos</button>
           <button class="btn-sv pri" onclick="saveSel()">✓ Salvar Selecionados</button>
         </div>
       </div>
@@ -880,7 +879,6 @@ async function saveRows(pedidos){
   }catch(e){showErr('Erro de conexão ao salvar.');}
 }
 function saveSel(){const p=[...selected];if(!p.length){toast('Selecione ao menos uma linha.');return;}saveRows(p);}
-function saveAll(){saveRows(getFiltered().map(r=>r._PEDIDO));}
 function clearSel(){selected.clear();updateSavebar();renderTable();}
 
 // ── EDIÇÃO LOCAL ──────────────────────────────────────────────
@@ -1190,8 +1188,33 @@ function toggleRow(pid,checked){
   if(tr)tr.className=checked?'sel':'';
 }
 function toggleAll(checked){
-  getFiltered().forEach(r=>{if(checked)selected.add(r._PEDIDO);else selected.delete(r._PEDIDO);});
-  updateSavebar();renderTable();
+  if(checked){
+    // Desmarca visualmente — vai confirmar antes
+    const ca=document.getElementById('chkAll');
+    if(ca) ca.checked=false;
+
+    const qtd=getFiltered().length;
+    const confirmar=confirm(
+      `⚠️ ATENÇÃO!\n\n` +
+      `Você está prestes a selecionar todos os ${qtd} registros visíveis.\n\n` +
+      `Se salvar em seguida, isso pode alterar as datas de inclusão dos pedidos no sistema para registros que ainda não foram classificados.\n\n` +
+      `Deseja continuar?`
+    );
+
+    if(confirmar){
+      getFiltered().forEach(r=>selected.add(r._PEDIDO));
+      updateSavebar();
+      renderTable();
+      setTimeout(()=>{
+        const ca=document.getElementById('chkAll');
+        if(ca) ca.checked=true;
+      },50);
+    }
+  } else {
+    getFiltered().forEach(r=>selected.delete(r._PEDIDO));
+    updateSavebar();
+    renderTable();
+  }
 }
 function updateSavebar(){
   const n=selected.size;
