@@ -857,12 +857,20 @@ async function saveRows(pedidos){
   const payload=pedidos.map(p=>{
     const e=localEdits[p]||{};
     const orig=rows.find(r=>r._PEDIDO===p)||{};
-    return{
-      PEDIDO:p,
-      SETOR:     e.hasOwnProperty('SETOR')          ?e.SETOR          :(orig.SETOR||''),
-      FABRICANTE:e.hasOwnProperty('FABRICANTE')      ?e.FABRICANTE     :(orig.FABRICANTE||''),
-      NIVEL_URGENCIA:e.hasOwnProperty('NIVEL_URGENCIA')?e.NIVEL_URGENCIA:(orig.NIVEL_URGENCIA||''),
-    };
+
+    // Monta objeto com TODOS os campos originais da linha
+    const item={...orig};
+
+    // Sobrescreve com edições locais (SETOR, FABRICANTE, NIVEL_URGENCIA)
+    item.SETOR          = e.hasOwnProperty('SETOR')          ? e.SETOR          : (orig.SETOR||'');
+    item.FABRICANTE     = e.hasOwnProperty('FABRICANTE')      ? e.FABRICANTE     : (orig.FABRICANTE||'');
+    item.NIVEL_URGENCIA = e.hasOwnProperty('NIVEL_URGENCIA')  ? e.NIVEL_URGENCIA : (orig.NIVEL_URGENCIA||'');
+
+    // Remove campos internos que não devem ir para o banco
+    delete item._PEDIDO;
+    delete item._raw;
+
+    return item;
   });
   try{
     const r=await fetch(url,{method:'POST',body:JSON.stringify({action:'saveRows',rows:payload})});
