@@ -1700,8 +1700,11 @@ const USUARIO_CORES = {
 const USUARIO_COLS = ['usuario', 'USUARIO', 'Usuario'];
 
 function formatUsuario(colName, valor){
-  if(!USUARIO_COLS.includes(colName)) return valor;
-  if(!valor || valor === '—') return valor;
+  // Compara ignorando maiúsculas, minúsculas e espaços extras
+  const colUp = String(colName).toUpperCase().trim();
+  const isUsuarioCol = USUARIO_COLS.some(c => c.toUpperCase() === colUp)
+    || colUp.includes('USU'); // pega qualquer coluna com USU no nome
+  if(!isUsuarioCol) return valor;
   const key = Object.keys(USUARIO_CORES).find(
     k => k.toUpperCase() === String(valor).toUpperCase().trim()
   );
