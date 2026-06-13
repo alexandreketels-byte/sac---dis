@@ -712,13 +712,19 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 
       <!-- Tabela resumo dos últimos registros -->
       <div class="cc" id="bRecentes">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div class="ct" style="margin:0">🕐 Últimos Registros Salvos</div>
-          <span id="bTotal" style="font-size:11px;color:var(--text3)"></span>
-        </div>
-        <div id="bRecentesTable" style="overflow:auto;max-height:320px"></div>
-      </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div class="ct" style="margin:0">🕐 Registros do Período</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="bTotal" style="font-size:11px;color:var(--text3)"></span>
+      <button onclick="exportarBanco()"
+        style="padding:6px 14px;border:none;border-radius:8px;
+        background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;
+        font-size:12px;font-weight:700;cursor:pointer;
+        box-shadow:0 2px 8px rgba(22,163,74,.3);white-space:nowrap">
+        📥 Exportar Excel
+      </button>
     </div>
+  </div>
 
     <!-- TABELA -->
     <div id="tTab">
@@ -1714,6 +1720,51 @@ function formatUsuario(colName, valor){
     border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;
     white-space:nowrap;display:inline-block">${valor}</span>`;
 }
+ // ── EXPORTAR BANCO DE DADOS ────────────────────────────────────
+function exportarBanco(){
+  const data = getBancoFiltrado();
+  if(!data.length){ toast('Nenhum dado no período para exportar.'); return; }
+
+  // Pega todos os cabeçalhos disponíveis
+  const cols = Object.keys(data[0]).filter(k => k !== '_raw');
+
+  const xmlRows = data.map(r => {
+    return `<Row>${cols.map(col => {
+      const val = String(r[col] ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<Cell><Data ss:Type="String">${val}</Data></Cell>`;
+    }).join('')}</Row>`;
+  }).join('');
+
+  const header = `<Row>${cols.map(col =>
+    `<Cell ss:StyleID="hdr"><Data ss:Type="String">${col}</Data></Cell>`
+  ).join('')}</Row>`;
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="hdr">
+      <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#0f172a" ss:Pattern="Solid"/>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="Banco de Dados">
+    <Table>${header}${xmlRows}</Table>
+  </Worksheet>
+</Workbook>`;
+
+  const now = new Date();
+  const d = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([xml], {type:'application/vnd.ms-excel;charset=utf-8'}));
+  a.download = `banco_dados_${d}.xls`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  toast(`📥 ${data.length} registros exportados!`);
+} 
 function toast(m){const e=document.getElementById('toast');e.textContent=m;e.style.display='inline-block';setTimeout(()=>e.style.display='none',3000);}
 function showErr(m){const e=document.getElementById('errbar');e.textContent='⚠ '+m;e.style.display='block';}
 
