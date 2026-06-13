@@ -712,19 +712,22 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 
       <!-- Tabela resumo dos últimos registros -->
       <div class="cc" id="bRecentes">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div class="ct" style="margin:0">🕐 Registros do Período</div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span id="bTotal" style="font-size:11px;color:var(--text3)"></span>
-      <button onclick="exportarBanco()"
-        style="padding:6px 14px;border:none;border-radius:8px;
-        background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;
-        font-size:12px;font-weight:700;cursor:pointer;
-        box-shadow:0 2px 8px rgba(22,163,74,.3);white-space:nowrap">
-        📥 Exportar Excel
-      </button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="ct" style="margin:0">🕐 Registros do Período</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="bTotal" style="font-size:11px;color:var(--text3)"></span>
+            <button onclick="exportarBanco()"
+              style="padding:6px 14px;border:none;border-radius:8px;
+              background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;
+              font-size:12px;font-weight:700;cursor:pointer;
+              box-shadow:0 2px 8px rgba(22,163,74,.3);white-space:nowrap">
+              📥 Exportar Excel
+            </button>
+          </div>
+        </div>
+        <div id="bRecentesTable" style="overflow:auto;max-height:320px"></div>
+      </div>
     </div>
-  </div>
 
     <!-- TABELA -->
     <div id="tTab">
@@ -1722,7 +1725,23 @@ function formatUsuario(colName, valor){
 }
  // ── EXPORTAR BANCO DE DADOS ────────────────────────────────────
 function exportarBanco(){
-  const data = getBancoFiltrado();
+  // Usa o mesmo filtro de datas do renderBanco
+  let data = [...bancoDados];
+  const dataInicial = document.getElementById('dataInicialBanco')?.value;
+  const dataFinal   = document.getElementById('dataFinalBanco')?.value;
+
+  if(dataInicial || dataFinal){
+    data = data.filter(r => {
+      const d = parseDate(r.SALVO_EM);
+      if(!d) return false;
+      const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      if(dataInicial && ds < dataInicial) return false;
+      if(dataFinal   && ds > dataFinal)   return false;
+      return true;
+    });
+  }
+
+  if(!data.length){ toast('Nenhum dado no período para exportar.'); return; }
   if(!data.length){ toast('Nenhum dado no período para exportar.'); return; }
 
   // Pega todos os cabeçalhos disponíveis
